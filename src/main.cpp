@@ -21,7 +21,9 @@ int main(int argc, char const *argv[])
 
     std::vector<int> obs_seq = {0, 0, 1};
 
-    hmm.forward_algo(obs_seq, init_dist);
+    // hmm.seq_prob(obs_seq, init_dist);
+
+    hmm.best_st_seq(obs_seq, init_dist);
 
     return 0;
 }
