@@ -64,23 +64,21 @@ float HMarkov::forward(const std::vector<int> &obs_seq,
 std::vector<int> HMarkov::best_st_seq(const std::vector<int> &obs_seq,
     const Eigen::MatrixXf &init_dist)
 {
-    viterbi(obs_seq, init_dist);
-    return std::vector<int>({});
+    return viterbi(obs_seq, init_dist);
 }
 
-void HMarkov::viterbi(const std::vector<int> &obs_seq,
+std::vector<int> HMarkov::viterbi(const std::vector<int> &obs_seq,
     const Eigen::MatrixXf &init_dist)
 {
     if (obs_seq.empty())
     {
-        return;
+        return {-1};
     }
 
     Eigen::MatrixXf delta =
         emiss_mat_.col(obs_seq[0]).transpose().cwiseProduct(init_dist);
-    Eigen::MatrixXf psi =
-        Eigen::MatrixXf::Zero(trans_mat_.rows(), obs_seq.size() + 1);
-    psi.col(0).setConstant(-1);
+    Eigen::MatrixXi psi =
+        Eigen::MatrixXi::Zero(trans_mat_.rows(), obs_seq.size() - 1);
 
     for (int t = 1; t < obs_seq.size(); t++)
     {
@@ -90,8 +88,8 @@ void HMarkov::viterbi(const std::vector<int> &obs_seq,
             Eigen::MatrixXf trans_probs = trans_mat_.col(j).transpose();
             Eigen::MatrixXf arrival_probs = delta.cwiseProduct(trans_probs);
             float emiss_p = emiss_mat_(j, obs_seq[t]);   
-            float delta_best = 0;
-            int predecessor_best = 0;
+            float delta_best = -1;
+            int predecessor_best = -1;
             for (int i = 0; i < arrival_probs.cols(); i++)
             {
                 if (arrival_probs(0, i) > delta_best)
@@ -100,13 +98,30 @@ void HMarkov::viterbi(const std::vector<int> &obs_seq,
                     predecessor_best = i;
                 }
             }
-            delta_next(0, j) = delta_best;
-            psi(j, t) = predecessor_best;
+            delta_next(0, j) = delta_best * emiss_p;
+            psi(j, t - 1) = predecessor_best;
+        }
+        delta = delta_next;
+    }
+
+    float delta_best = 0;
+    int predecessor_best = 0;
+    for (int i = 0; i < delta.cols(); i++) {
+        if (delta(0, i) > delta_best) {
+            delta_best = delta(0, i);
+            predecessor_best = i;
         }
     }
-    std::cout << delta << std::endl;
-    std::cout << "---------------------------" << std::endl;
-    std::cout << psi << std::endl;
+
+    std::vector<int> st_path;
+    st_path.push_back(predecessor_best);
+    for (int psi_col = psi.cols() - 1; psi_col >= 0; psi_col--)
+    {
+        st_path.push_back(psi(predecessor_best, psi_col));
+    }
+
+    std::reverse(st_path.begin(), st_path.end());
+    return st_path;
 }
 
 } // namespace sp

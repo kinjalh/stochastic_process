@@ -15,7 +15,7 @@ private:
 
     virtual float forward(const std::vector<int> &obs_seq,
         const Eigen::MatrixXf &init_dist);
-    virtual void viterbi(const std::vector<int> &obs_seq,
+    virtual std::vector<int> viterbi(const std::vector<int> &obs_seq,
         const Eigen::MatrixXf &init_dist);
 public:
     HMarkov();
