@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(stock_pred)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 include_directories(include)
 add_library(sp src/sp_math.cpp src/markov.cpp src/gbm.cpp src/hidden_markov.cpp)
