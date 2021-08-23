@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include "hidden_markov.h"
 
 namespace sp
@@ -27,38 +26,70 @@ HMarkov::~HMarkov()
 float HMarkov::seq_prob(const std::vector<int> &obs_seq,
     const Eigen::MatrixXf &init_dist)
 {
-    return forward(obs_seq, init_dist);
+    Eigen::MatrixXf alpha = forward(obs_seq, init_dist);
+    return alpha.row(alpha.rows() - 1).sum();
 }
 
-float HMarkov::forward(const std::vector<int> &obs_seq,
+Eigen::MatrixXf HMarkov::forward(const std::vector<int> &obs_seq,
     const Eigen::MatrixXf &init_dist)
 {
     if (obs_seq.empty())
     {
-        return -1.0;
+        return Eigen::MatrixXf::Zero(0, 0);
     }
 
     Eigen::MatrixXf alpha =
+        Eigen::MatrixXf::Zero(obs_seq.size(), trans_mat_.rows());
+    alpha.row(0) =
         emiss_mat_.col(obs_seq[0]).transpose().cwiseProduct(init_dist);
-    std::cout << alpha << std::endl;
 
     for (int t = 1; t < obs_seq.size(); t++)
     {
-        Eigen::MatrixXf alpha_next(alpha.rows(), alpha.cols());
+        Eigen::MatrixXf alpha_next(1, alpha.cols());
         for (int j = 0; j < alpha_next.cols(); j++)
         {
             Eigen::MatrixXf trans_probs = trans_mat_.col(j);
             float emiss_p = emiss_mat_(j, obs_seq[t]);
-            float alpha_t_j = (alpha * trans_probs)(0, 0) * emiss_p;
+            float alpha_t_j = (alpha.row(t - 1) * trans_probs)(0, 0) * emiss_p;
             alpha_next(0, j) = alpha_t_j;
         }
-        alpha = alpha_next;
-        std::cout << "-----------------------" << std::endl;
-        std::cout << alpha << std::endl;
+        alpha.row(t) = alpha_next;
     }
-    std::cout << "----------------------" << std::endl;
-    std::cout << "final result = " << alpha.sum() << std::endl;
-    return alpha.sum();
+    return alpha;
+}
+
+Eigen::MatrixXf HMarkov::st_probs(const std::vector<int> &obs_seq)
+{
+    Eigen::MatrixXf beta = backward(obs_seq);
+    return beta.row(0);
+}
+
+Eigen::MatrixXf HMarkov::backward(const std::vector<int> &obs_seq)
+{
+    if (obs_seq.empty())
+    {
+        return Eigen::MatrixXf::Zero(1, trans_mat_.cols());
+    }
+
+    Eigen::MatrixXf beta =
+        Eigen::MatrixXf::Ones(obs_seq.size(), trans_mat_.cols());
+
+    for (int t = obs_seq.size() - 2; t >= 0; t--)
+    {
+        Eigen::MatrixXf beta_next(1, beta.cols());
+        for (int i = 0; i < beta_next.cols(); i++)
+        {
+            Eigen::MatrixXf trans_probs = trans_mat_.row(i);
+            Eigen::MatrixXf emiss_probs =
+                emiss_mat_.col(obs_seq[t + 1]).transpose();
+            Eigen::MatrixXf tmp = trans_probs.cwiseProduct(
+                emiss_probs).cwiseProduct(beta.row(t + 1));
+            beta_next(0, i) = tmp.sum();
+        }
+        beta.row(t) = beta_next;
+    }
+
+    return beta;
 }
 
 std::vector<int> HMarkov::best_st_seq(const std::vector<int> &obs_seq,
@@ -122,6 +153,16 @@ std::vector<int> HMarkov::viterbi(const std::vector<int> &obs_seq,
 
     std::reverse(st_path.begin(), st_path.end());
     return st_path;
+}
+
+
+void HMarkov::fit_hmm(const std::vector<int> &obs_seq)
+{
+}
+
+void HMarkov::baum_welch(const std::vector<int> &obs_seq)
+{
+
 }
 
 } // namespace sp

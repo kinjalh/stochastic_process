@@ -17,18 +17,20 @@ int main(int argc, char const *argv[])
     sp::HMarkov hmm(trans_mat, emiss_mat);
 
     Eigen::MatrixXf init_dist(1, 2);
-    init_dist << 0.6, 0.4;
+    init_dist << 0.375, 0.625;
 
     std::vector<int> obs_seq = {0, 1, 2};
 
-    // hmm.seq_prob(obs_seq, init_dist);
+    // float p = hmm.seq_prob(obs_seq, init_dist);
 
-    std::vector<int> seq = hmm.best_st_seq(obs_seq, init_dist);
-    for (int s : seq)
-    {
-        std::cout << s << " ";
-    }
-    std::cout << std::endl;
+    // std::vector<int> seq = hmm.best_st_seq(obs_seq, init_dist);
+    // for (int s : seq)
+    // {
+    //     std::cout << s << " ";
+    // }
+    // std::cout << std::endl;
+
+    std::cout << hmm.st_probs(obs_seq) << std::endl;
 
     return 0;
 }
